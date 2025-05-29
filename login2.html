@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComPAS ログイン</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Google Fonts Import: Cinzel for title, Inter for body text */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap');
+
+        :root {
+            /* Indigo color palette (藍系の和色) */
+            --ai-iro: #165E83;         /* 藍色 */
+            --kon-iro: #192F57;        /* 紺色 */
+            --kachi-iro: #0D314F;      /* 勝色 */
+            --tetsu-kon: #17233D;      /* 鉄紺 */
+            --koi-ai: #0F2350;         /* 濃藍 */
+            --shiro-nezumi: #E0E0E0;   /* 白鼠 (light gray for text) */
+            --gin-nezumi: #A0A0A0;     /* 銀鼠 (medium gray for placeholders) */
+        }
+
+        /* Basic Reset and Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Prevent scrollbars from gradient animation */
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Serif JP', sans-serif; /* Base font */
+            color: var(--shiro-nezumi);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative; /* For z-indexing context */
+            /* Animated Gradient Background */
+            background: linear-gradient(-45deg, var(--koi-ai), var(--kachi-iro), var(--kon-iro), var(--tetsu-kon));
+            background-size: 400% 400%;
+            animation: gradientFlow 10s ease-in-out infinite;
+        }
+
+        /* Gradient Animation Keyframes */
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Login Wrapper to center content */
+        .login-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+            z-index: 1; /* Above background */
+        }
+
+        /* Semi-transparent Login Box */
+        .login-box {
+            background: rgba(15, 35, 80, 0.65); /* Dark semi-transparent indigo */
+            padding: 40px 50px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px); /* Frosted glass effect */
+            -webkit-backdrop-filter: blur(8px); /* Safari support */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+        }
+
+        /* Main Title "ComPAS" */
+        .login-box h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 3.5rem; /* Larger for impact */
+            color: #FFFFFF;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3), 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* Subtitle */
+        .login-box .subtitle {
+            font-size: 0.95rem;
+            color: var(--shiro-nezumi);
+            margin-bottom: 35px;
+            line-height: 1.6;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        /* Form Styling */
+        #loginForm {
+            width: 100%;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-group label.sr-only { /* For accessibility, hidden visually */
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            border: 0;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 20px;
+            padding-right: 45px; /* Space for icon */
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--shiro-nezumi);
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-group input::placeholder {
+            color: var(--gin-nezumi);
+            opacity: 0.8;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--ai-iro);
+            box-shadow: 0 0 0 3px rgba(22, 94, 131, 0.5);
+        }
+
+        /* Password Toggle Icon */
+        .password-group {
+            position: relative;
+        }
+        .password-group .fa-eye, .password-group .fa-eye-slash {
+            position: absolute;
+            top: 50%;
+            right: 18px;
+            transform: translateY(-50%);
+            color: var(--gin-nezumi);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .password-group .fa-eye:hover, .password-group .fa-eye-slash:hover {
+            color: var(--shiro-nezumi);
+        }
+
+        /* Login Button */
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px 20px;
+            background: var(--ai-iro);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Inter', 'Noto Serif JP', sans-serif;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button[type="submit"]:hover {
+            background: var(--kon-iro); /* Darker shade on hover */
+        }
+        button[type="submit"]:active {
+            transform: scale(0.98); /* Slight press effect */
+        }
+
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(224, 224, 224, 0.7); /* Lighter than gin-nezumi for footer */
+            font-size: 0.9em;
+            z-index: 2; /* Above login box if overlap occurs */
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .login-box h1 {
+                font-size: 2.8rem;
+            }
+            .login-box .subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 30px;
+            }
+            .login-box {
+                padding: 30px 25px;
+                margin: 0 15px; /* Add some margin on smaller screens */
+            }
+            .input-group input {
+                padding: 12px 15px;
+                padding-right: 40px;
+            }
+            button[type="submit"] {
+                padding: 12px 15px;
+                font-size: 1rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .login-box h1 {
+                font-size: 2.2rem;
+            }
+             .login-box .subtitle {
+                font-size: 0.85rem;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-box">
+            <h1>ComPAS</h1>
+            <p class="subtitle">Communication &amp;　Partnership<br>Advancement System</p>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="email" class="sr-only">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="メールアドレス" required>
+                </div>
+                <div class="input-group password-group">
+                    <label for="password" class="sr-only">Password</label>
+                    <input type="password" id="password" name="password" placeholder="パスワード" required>
+                    <i class="fas fa-eye" id="togglePassword"></i>
+                </div>
+                <button type="submit">ログイン</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        &copy;2025 Kidokaede All Rights Reserved.
+    </footer>
+
+    <script>
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        togglePassword.addEventListener('click', function () {
+            // Toggle the type attribute
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle the icon
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+
+        // Prevent form submission for demo purposes
+        const loginForm = document.getElementById('loginForm');
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            // Here you would typically handle the login logic,
+            // e.g., send data to a Flask backend.
+            // For this demo, we'll just log to console.
+            console.log('Login attempt with:');
+            console.log('Email:', document.getElementById('email').value);
+            console.log('Password:', passwordInput.value);
+            // You could add a message to the user here, e.g. in a custom modal
+            // alert('ログイン試行 (実際には送信されません)'); // Avoid alert in production
+        });
+    </script>
+
+</body>
+</html>

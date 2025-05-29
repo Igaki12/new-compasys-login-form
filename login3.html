@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComPAS ログイン</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- カスタムスタイル --- */
+
+        /* 全体と背景設定 */
+        body {
+            font-family: 'Inter', sans-serif; /* 基本フォント */
+            background-size: 200% 200%; /* グラデーションアニメーションのためサイズを拡大 */
+            /* gradientFlow: グラデーション内の色が流れるアニメーション (20秒周期)
+                changeGradientColor: グラデーションの色セットが切り替わるアニメーション (4パターン x 10秒 = 40秒周期)
+            */
+            animation: gradientFlow 20s ease infinite, changeGradientColor 40s linear infinite;
+            color: #e0e0e0; /* 基本の文字色を明るめに */
+            display: flex;
+            flex-direction: column; /* フッターを画面下部に配置するため */
+            min-height: 100vh; /* 画面全体の高さを確保 */
+            overflow-x: hidden; /* 横スクロールバーの防止 */
+        }
+
+        /* 背景グラデーションが流れるアニメーション */
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 背景グラデーションの色セットが10秒ごとに切り替わるアニメーション */
+        /* 4つの異なる紫系グラデーションを定義 */
+        @keyframes changeGradientColor {
+            0%, 100% { background-image: linear-gradient(-45deg, #2a0a4a, #40106b, #5c188c, #7d2aa8); } /* 紫系パターン1 */
+        }
+
+        /* フォームコンテナのスタイル */
+        .form-container {
+            background-color: rgba(15, 10, 30, 0.65); /* 暗めの紫がかった半透明背景 */
+            backdrop-filter: blur(12px) saturate(180%); /* ガラスのようなぼかし効果と彩度調整 */
+            -webkit-backdrop-filter: blur(12px) saturate(180%); /* Safari対応 */
+            border: 1px solid rgba(200, 180, 255, 0.18); /* 紫がかった淡い境界線 */
+            box-shadow: 0 12px 40px rgba(10, 5, 20, 0.5); /* 深く、広範囲な影で重厚感を演出 */
+        }
+
+        /* タイトル用フォントスタイル */
+        .font-eb-garamond {
+            font-family: 'EB Garamond', serif; /* セリフ体で格式高い印象 */
+            font-weight: 700; /* 太字 */
+            letter-spacing: 0.05em; /* 文字間隔を少し広げる */
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.6); /* 文字に影をつけ立体感を強調 */
+        }
+
+        /* サブタイトル用フォントスタイル */
+        .subtitle {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300; /* 細めのウェイト */
+            letter-spacing: 0.08em; /* 文字間隔を広めにとる */
+            color: #c5c5e0; /* 少し明るめの紫がかった白色 */
+            text-shadow: 0px 1px 3px rgba(0,0,0,0.4);
+        }
+
+        /* 入力フィールドのスタイル */
+        .input-field {
+            background-color: rgba(30, 20, 50, 0.7); /* フォームコンテナより少し明るい半透明背景 */
+            border: 1px solid rgba(200, 180, 255, 0.25); /* 境界線 */
+            color: #f0f0f0; /* 入力文字の色 */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease; /* スムーズな変化 */
+        }
+        .input-field::placeholder {
+            color: #a0a0c0a0; /* プレースホルダーの色を少し薄く */
+        }
+        .input-field:focus {
+            outline: none; /* デフォルトのアウトラインを消す */
+            border-color: rgba(220, 200, 255, 0.7); /* フォーカス時の境界線色 */
+            box-shadow: 0 0 0 3px rgba(120, 80, 180, 0.4); /* フォーカス時に紫系のグロー効果 */
+        }
+
+        /* 送信ボタンのスタイル */
+        .submit-button {
+            background-image: linear-gradient(to right, #581c87 0%, #7e22ce 51%, #581c87 100%); /* 紫系のグラデーション */
+            background-size: 200% auto; /* ホバーアニメーション用 */
+            color: white;
+            font-weight: 600; /* やや太字 */
+            transition: background-position 0.5s ease, transform 0.15s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px 0 rgba(88, 28, 135, 0.5); /* ボタンに影 */
+            text-transform: uppercase; /* 文字を大文字に */
+            letter-spacing: 0.05em;
+        }
+        .submit-button:hover {
+            background-position: right center; /* グラデーションの位置を変化させる */
+            transform: translateY(-2px); /* 少し浮き上がる効果 */
+            box-shadow: 0 7px 25px 0 rgba(88, 28, 135, 0.7); /* ホバー時の影を強調 */
+        }
+        .submit-button:active {
+            transform: translateY(0px); /* クリック時に元の位置に戻る */
+            box-shadow: 0 4px 15px 0 rgba(88, 28, 135, 0.5);
+        }
+
+        /* パスワード表示/非表示切り替えアイコンのスタイル */
+        .password-toggle-icon {
+            color: #a0a0c0;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .password-toggle-icon:hover {
+            color: #d0d0e0; /* ホバー時に明るく */
+        }
+
+        /* フッターテキストのスタイル */
+        .footer-text {
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+            color: rgba(220, 220, 240, 0.6); /* やや透明度のある白 */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5); /* フッターにも影 */
+            font-size: 0.8rem; /* 少し小さめに */
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <main class="w-full max-w-md">
+        <div class="text-center mb-10 md:mb-12">
+            <h1 class="font-eb-garamond text-6xl sm:text-7xl md:text-8xl text-purple-200 tracking-wider">ComPAS</h1>
+            <p class="subtitle mt-3 text-sm sm:text-base md:text-lg px-2">
+                Communication &amp; Partnership <br class="sm:hidden">Advancement System
+            </p>
+        </div>
+
+        <div class="form-container p-6 sm:p-8 md:p-10 rounded-xl shadow-2xl">
+            <form id="loginForm">
+                <div class="mb-6">
+                    <label for="email" class="block text-sm font-medium text-purple-300 mb-1">Email Address</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5">
+                            <i class="fas fa-envelope text-purple-400 text-opacity-80"></i>
+                        </span>
+                        <input type="email" id="email" name="email" required
+                               class="input-field block w-full pl-10 pr-3 py-3 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-sm sm:text-base"
+                               placeholder="your.email@example.com">
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <label for="password" class="block text-sm font-medium text-purple-300 mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5">
+                            <i class="fas fa-lock text-purple-400 text-opacity-80"></i>
+                        </span>
+                        <input type="password" id="password" name="password" required
+                               class="input-field block w-full pl-10 pr-10 py-3 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-sm sm:text-base"
+                               placeholder="••••••••••••">
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5">
+                            <i id="togglePassword" class="fas fa-eye password-toggle-icon"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="submit-button w-full py-3.5 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-60">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <footer class="mt-auto pt-10 pb-6 text-center">
+        <p class="footer-text">&copy; 2025 Kidokaede. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // --- JavaScript ---
+
+        // パスワード表示/非表示切り替え機能
+        const togglePasswordIcon = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        togglePasswordIcon.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            // アイコンのクラスを切り替え (fa-eye と fa-eye-slash)
+            this.classList.toggle('fa-eye');
+            this.classList.toggle('fa-eye-slash');
+        });
+
+        // フォーム送信時の処理 (実際の送信は行わないデモ)
+        const loginForm = document.getElementById('loginForm');
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // フォームのデフォルト送信をキャンセル
+
+            // ここで実際のログイン処理を実装します。
+            // 例: FlaskバックエンドへのAPIリクエストなど
+            const email = document.getElementById('email').value;
+            const password = passwordInput.value; // passwordInputは上で宣言済み
+            
+            console.log('Login attempt:');
+            console.log('Email:', email);
+            console.log('Password:', password); // 実際のアプリではパスワードをコンソールに出力しないでください
+
+            // ログイン試行のフィードバック (簡易的なもの)
+            // 実際には、より洗練された通知UIを使用することを推奨します。
+            // alert(`ログイン試行:\nEmail: ${email}\nPassword: (非表示)`);
+        });
+
+        // CSSアニメーションで背景グラデーションの色と流れを制御しているため、
+        // JavaScriptによる追加の背景操作は不要です。
+    </script>
+</body>
+</html>
