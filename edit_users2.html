@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComPAS ユーザー情報管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .table-sortable th {
+            cursor: pointer;
+            position: relative;
+        }
+        .table-sortable th .sort-icon {
+            font-size: 0.8em;
+            margin-left: 4px;
+            opacity: 0.5;
+        }
+        .table-sortable th .sort-icon.active {
+            opacity: 1;
+        }
+        .filter-input {
+            width: 100%;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .toast-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .toast-message.show {
+            opacity: 1;
+        }
+        /* Hamburger menu icon */
+        .hamburger-icon span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background-color: white;
+            margin: 4px 0;
+            transition: all 0.3s ease-in-out;
+        }
+        .hamburger-menu-items {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: white;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 40;
+            min-width: 160px;
+        }
+        .hamburger-menu-items.show {
+            display: block;
+        }
+        .password-toggle-icon {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6b7280; /* Gray-500 */
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl sm:text-2xl font-semibold">ComPAS ユーザー情報管理</h1>
+            <div class="relative">
+                <button id="hamburgerButton" class="p-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-white">
+                    <div class="hamburger-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+                <div id="hamburgerMenuItems" class="hamburger-menu-items mt-2 py-1">
+                    <a href="#" id="myPageButton" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">マイページに戻る</a>
+                    <a href="#" id="logoutButton" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">ログアウト</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4">
+        <div class="mb-6 bg-white p-4 rounded-lg shadow">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="flex gap-2 flex-wrap">
+                    <button id="createUserButton" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        ユーザー作成
+                    </button>
+                    <button id="activateUsersButton" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" disabled>有効化</button>
+                    <button id="deactivateUsersButton" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" disabled>無効化</button>
+                    <button id="deleteUsersButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" disabled>削除</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-2 sm:p-6 rounded-lg shadow overflow-x-auto">
+            <table id="userTable" class="min-w-full divide-y divide-gray-200 table-sortable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-3 text-left">
+                            <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="id">ID <span class="sort-icon"></span></th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="email">Email <span class="sort-icon"></span></th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="name">Name <span class="sort-icon"></span></th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="role">Role <span class="sort-icon"></span></th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="is_active">Active <span class="sort-icon"></span></th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="last_login_at">Last Login <span class="sort-icon"></span></th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="created_at">Created At <span class="sort-icon"></span></th>
+                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-sort="updated_at">Updated At <span class="sort-icon"></span></th>
+                    </tr>
+                    <tr class="bg-gray-100">
+                        <th class="px-3 py-2"></th>
+                        <th class="px-3 py-2"><input type="text" class="filter-input" data-filter-col="id" placeholder="Filter ID"></th>
+                        <th class="px-3 py-2"><input type="text" class="filter-input" data-filter-col="email" placeholder="Filter Email"></th>
+                        <th class="px-3 py-2"><input type="text" class="filter-input" data-filter-col="name" placeholder="Filter Name"></th>
+                        <th class="px-3 py-2"><input type="text" class="filter-input" data-filter-col="role" placeholder="Filter Role"></th>
+                        <th class="px-3 py-2">
+                            <select class="filter-input" data-filter-col="is_active">
+                                <option value="">All</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </th>
+                        <th class="px-3 py-2"></th> <th class="px-3 py-2"></th> <th class="px-3 py-2"></th> </tr>
+                </thead>
+                <tbody id="userTableBody" class="bg-white divide-y divide-gray-200">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="createUserModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-semibold mb-6">ユーザー作成</h2>
+            <form id="createUserForm">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                    <input type="email" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                    <p id="emailError" class="text-red-500 text-xs mt-1 hidden"></p>
+                </div>
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="name" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+                <div class="mb-4 relative"> {/* Added relative positioning for the icon */}
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+                    <input type="password" id="password" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 pr-10" required> {/* Added pr-10 for icon spacing */}
+                    <span id="togglePassword" class="password-toggle-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mb-6">
+                    <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <input type="text" id="role" name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="cancelCreateUserButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md border border-gray-300">キャンセル</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm">作成</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirmationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="confirmationTitle" class="text-xl font-semibold mb-4">確認</h2>
+            <p id="confirmationMessage" class="mb-6 text-gray-600"></p>
+            <div class="flex justify-end gap-3">
+                <button type="button" id="cancelConfirmButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md border border-gray-300">キャンセル</button>
+                <button type="button" id="confirmActionButton" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm">実行</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastMessage" class="toast-message"></div>
+
+    <script>
+        // --- Mock Data ---
+        // In a real application, this data would come from a backend API.
+        // Password is not stored or displayed here for security reasons.
+        // It's only used for creation.
+        let users = [
+            { id: 1, email: "admin@example.com", name: "管理者", password_hash: "hashed_password_1", role: "admin", is_active: true, last_login_at: new Date("2024-05-20T10:00:00Z"), created_at: new Date("2023-01-15T09:30:00Z"), updated_at: new Date("2024-05-20T10:00:00Z"), deleted_at: null },
+            { id: 2, email: "user1@example.com", name: "一般ユーザー1", password_hash: "hashed_password_2", role: "user", is_active: true, last_login_at: new Date("2024-05-28T14:20:00Z"), created_at: new Date("2023-02-10T11:00:00Z"), updated_at: new Date("2024-05-28T14:20:00Z"), deleted_at: null },
+            { id: 3, email: "user2@example.com", name: "一般ユーザー2", password_hash: "hashed_password_3", role: "user", is_active: false, last_login_at: new Date("2024-03-10T18:00:00Z"), created_at: new Date("2023-03-05T16:45:00Z"), updated_at: new Date("2024-04-01T10:00:00Z"), deleted_at: null },
+            { id: 4, email: "test@example.com", name: "テストユーザー", password_hash: "hashed_password_4", role: "tester", is_active: true, last_login_at: null, created_at: new Date("2024-01-20T12:00:00Z"), updated_at: new Date("2024-01-20T12:00:00Z"), deleted_at: null },
+            { id: 5, email: "inactive@example.com", name: "無効ユーザー", password_hash: "hashed_password_5", role: "user", is_active: false, last_login_at: new Date("2023-11-11T11:11:11Z"), created_at: new Date("2023-10-01T00:00:00Z"), updated_at: new Date("2023-12-01T00:00:00Z"), deleted_at: null },
+        ];
+        let nextUserId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+        let currentSort = { column: 'id', order: 'asc' }; // Default sort
+        let currentFilters = {};
+
+        // --- DOM Elements ---
+        const userTableBody = document.getElementById('userTableBody');
+        const createUserButton = document.getElementById('createUserButton');
+        const createUserModal = document.getElementById('createUserModal');
+        const createUserForm = document.getElementById('createUserForm');
+        const cancelCreateUserButton = document.getElementById('cancelCreateUserButton');
+        const emailInput = document.getElementById('email');
+        const emailError = document.getElementById('emailError');
+        const passwordInput = document.getElementById('password'); // Get password input
+        const togglePasswordButton = document.getElementById('togglePassword'); // Get toggle button
+        
+        const activateUsersButton = document.getElementById('activateUsersButton');
+        const deactivateUsersButton = document.getElementById('deactivateUsersButton');
+        const deleteUsersButton = document.getElementById('deleteUsersButton');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmationTitle = document.getElementById('confirmationTitle');
+        const confirmationMessage = document.getElementById('confirmationMessage');
+        const cancelConfirmButton = document.getElementById('cancelConfirmButton');
+        const confirmActionButton = document.getElementById('confirmActionButton');
+        let confirmActionCallback = null;
+
+        const toastMessage = document.getElementById('toastMessage');
+
+        const hamburgerButton = document.getElementById('hamburgerButton');
+        const hamburgerMenuItems = document.getElementById('hamburgerMenuItems');
+        const myPageButton = document.getElementById('myPageButton');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // --- SVG Icons for Password Toggle ---
+        const eyeIconSVG = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>`;
+        const eyeSlashIconSVG = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.575M2.25 2.25l19.5 19.5M12 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z" />
+            </svg>`;
+
+
+        // --- Utility Functions ---
+        function formatDate(date) {
+            if (!date) return '-';
+            return date.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showToast(message, type = 'success') {
+            toastMessage.textContent = message;
+            toastMessage.className = 'toast-message show';
+            if (type === 'error') {
+                toastMessage.classList.add('bg-red-500');
+            } else {
+                toastMessage.classList.remove('bg-red-500'); // Ensure default is not red
+                toastMessage.classList.add('bg-green-500'); // Default success
+            }
+            setTimeout(() => {
+                toastMessage.className = 'toast-message';
+            }, 3000);
+        }
+
+        function openModal(modalElement) {
+            modalElement.classList.add('active');
+        }
+
+        function closeModal(modalElement) {
+            modalElement.classList.remove('active');
+        }
+        
+        function openConfirmationModal(title, message, callback) {
+            confirmationTitle.textContent = title;
+            confirmationMessage.textContent = message;
+            confirmActionCallback = callback;
+            openModal(confirmationModal);
+        }
+
+        // --- Table Rendering ---
+        function renderTable() {
+            userTableBody.innerHTML = ''; // Clear existing rows
+
+            let filteredUsers = users.filter(user => !user.deleted_at); // Exclude logically deleted users
+
+            // Apply filters
+            Object.keys(currentFilters).forEach(key => {
+                const filterValue = currentFilters[key].toLowerCase();
+                if (filterValue) {
+                    filteredUsers = filteredUsers.filter(user => {
+                        if (key === 'is_active') {
+                            return (user.is_active === (filterValue === 'true'));
+                        }
+                        return String(user[key]).toLowerCase().includes(filterValue);
+                    });
+                }
+            });
+            
+            // Apply sorting
+            filteredUsers.sort((a, b) => {
+                let valA = a[currentSort.column];
+                let valB = b[currentSort.column];
+
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                if (valA instanceof Date) valA = valA.getTime();
+                if (valB instanceof Date) valB = valB.getTime();
+
+
+                if (valA < valB) return currentSort.order === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.order === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            if (filteredUsers.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="9" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">該当するユーザーが見つかりません。</td>`;
+                userTableBody.appendChild(tr);
+            } else {
+                filteredUsers.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.classList.add('hover:bg-gray-50');
+                    tr.dataset.userId = user.id;
+                    tr.innerHTML = `
+                        <td class="px-3 py-3 whitespace-nowrap">
+                            <input type="checkbox" class="row-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" data-user-id="${user.id}">
+                        </td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${user.id}</td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${user.email}</td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${user.name}</td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${user.role || '-'}</td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${user.is_active ? '有効' : '無効'}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${formatDate(user.last_login_at)}</td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${formatDate(user.created_at)}</td>
+                        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${formatDate(user.updated_at)}</td>
+                    `;
+                    userTableBody.appendChild(tr);
+                });
+            }
+            updateActionButtonsState();
+            updateSortIcons();
+        }
+
+        // --- Sorting ---
+        document.querySelectorAll('.table-sortable th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.dataset.sort;
+                if (currentSort.column === column) {
+                    currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = column;
+                    currentSort.order = 'asc';
+                }
+                renderTable();
+            });
+        });
+
+        function updateSortIcons() {
+            document.querySelectorAll('.table-sortable th[data-sort] .sort-icon').forEach(icon => {
+                icon.textContent = '';
+                icon.classList.remove('active');
+            });
+            const activeTh = document.querySelector(`.table-sortable th[data-sort="${currentSort.column}"]`);
+            if (activeTh) {
+                const icon = activeTh.querySelector('.sort-icon');
+                icon.textContent = currentSort.order === 'asc' ? '▲' : '▼';
+                icon.classList.add('active');
+            }
+        }
+        
+        // --- Filtering ---
+        document.querySelectorAll('.filter-input').forEach(input => {
+            input.addEventListener('keyup', (e) => {
+                currentFilters[e.target.dataset.filterCol] = e.target.value;
+                renderTable();
+            });
+            if (input.tagName === 'SELECT') {
+                 input.addEventListener('change', (e) => {
+                    currentFilters[e.target.dataset.filterCol] = e.target.value;
+                    renderTable();
+                });
+            }
+        });
+
+        // --- User Creation ---
+        createUserButton.addEventListener('click', () => {
+            createUserForm.reset();
+            emailError.classList.add('hidden');
+            emailError.textContent = '';
+            // Reset password field to 'password' type and show 'eye' icon
+            passwordInput.type = 'password';
+            togglePasswordButton.innerHTML = eyeIconSVG;
+            openModal(createUserModal);
+            emailInput.focus();
+        });
+
+        cancelCreateUserButton.addEventListener('click', () => {
+            closeModal(createUserModal);
+        });
+
+        createUserForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(createUserForm);
+            const newUser = {
+                id: nextUserId++,
+                email: formData.get('email'),
+                name: formData.get('name'),
+                password_hash: "simulated_hash_for_" + formData.get('password'), // In real app, hash this securely on backend
+                role: formData.get('role') || null,
+                is_active: true,
+                last_login_at: null,
+                created_at: new Date(),
+                updated_at: new Date(),
+                deleted_at: null
+            };
+
+            // Basic email validation (format and uniqueness)
+            if (!isValidEmail(newUser.email)) {
+                emailError.textContent = '有効なメールアドレスを入力してください。';
+                emailError.classList.remove('hidden');
+                return;
+            }
+            if (users.some(u => u.email === newUser.email && !u.deleted_at)) {
+                emailError.textContent = 'このメールアドレスは既に使用されています。';
+                emailError.classList.remove('hidden');
+                return;
+            }
+            emailError.classList.add('hidden');
+
+            users.push(newUser);
+            renderTable();
+            closeModal(createUserModal);
+            showToast('ユーザーが正常に作成されました。');
+        });
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // --- Password Visibility Toggle ---
+        if (togglePasswordButton && passwordInput) {
+            togglePasswordButton.addEventListener('click', () => {
+                // Toggle the type attribute
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                // Toggle the icon
+                if (type === 'password') {
+                    togglePasswordButton.innerHTML = eyeIconSVG;
+                } else {
+                    togglePasswordButton.innerHTML = eyeSlashIconSVG;
+                }
+            });
+        }
+
+
+        // --- Row Selection and Action Button State ---
+        function getSelectedUserIds() {
+            const selectedIds = [];
+            document.querySelectorAll('.row-checkbox:checked').forEach(checkbox => {
+                selectedIds.push(parseInt(checkbox.dataset.userId));
+            });
+            return selectedIds;
+        }
+
+        function updateActionButtonsState() {
+            const selectedIds = getSelectedUserIds();
+            const disabled = selectedIds.length === 0;
+            activateUsersButton.disabled = disabled;
+            deactivateUsersButton.disabled = disabled;
+            deleteUsersButton.disabled = disabled;
+        }
+
+        selectAllCheckbox.addEventListener('change', (e) => {
+            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+            updateActionButtonsState();
+        });
+
+        userTableBody.addEventListener('change', (e) => {
+            if (e.target.classList.contains('row-checkbox')) {
+                updateActionButtonsState();
+                const allChecked = document.querySelectorAll('.row-checkbox').length > 0 && 
+                                   document.querySelectorAll('.row-checkbox:checked').length === document.querySelectorAll('.row-checkbox').length;
+                selectAllCheckbox.checked = allChecked;
+            }
+        });
+
+        // --- User Actions (Activate, Deactivate, Delete) ---
+        activateUsersButton.addEventListener('click', () => {
+            const selectedIds = getSelectedUserIds();
+            if (selectedIds.length === 0) return;
+            openConfirmationModal(
+                'ユーザーの有効化',
+                `${selectedIds.length}人のユーザーを有効化しますか？`,
+                () => {
+                    selectedIds.forEach(id => {
+                        const user = users.find(u => u.id === id);
+                        if (user) {
+                            user.is_active = true;
+                            user.updated_at = new Date();
+                        }
+                    });
+                    renderTable();
+                    selectAllCheckbox.checked = false;
+                    showToast(`${selectedIds.length}人のユーザーを有効化しました。`);
+                    closeModal(confirmationModal);
+                }
+            );
+        });
+
+        deactivateUsersButton.addEventListener('click', () => {
+            const selectedIds = getSelectedUserIds();
+            if (selectedIds.length === 0) return;
+             openConfirmationModal(
+                'ユーザーの無効化',
+                `${selectedIds.length}人のユーザーを無効化しますか？`,
+                () => {
+                    selectedIds.forEach(id => {
+                        const user = users.find(u => u.id === id);
+                        if (user) {
+                            user.is_active = false;
+                            user.updated_at = new Date();
+                        }
+                    });
+                    renderTable();
+                    selectAllCheckbox.checked = false;
+                    showToast(`${selectedIds.length}人のユーザーを無効化しました。`);
+                    closeModal(confirmationModal);
+                }
+            );
+        });
+
+        deleteUsersButton.addEventListener('click', () => {
+            const selectedIds = getSelectedUserIds();
+            if (selectedIds.length === 0) return;
+            openConfirmationModal(
+                'ユーザーの削除',
+                `${selectedIds.length}人のユーザーを削除しますか？ (この操作は論理削除です)`,
+                () => {
+                    selectedIds.forEach(id => {
+                        const user = users.find(u => u.id === id);
+                        if (user) {
+                            user.deleted_at = new Date();
+                            user.updated_at = new Date(); // Also update updated_at on logical delete
+                        }
+                    });
+                    renderTable();
+                    selectAllCheckbox.checked = false;
+                    showToast(`${selectedIds.length}人のユーザーを論理削除しました。`);
+                    closeModal(confirmationModal);
+                }
+            );
+        });
+        
+        // --- Confirmation Modal Logic ---
+        cancelConfirmButton.addEventListener('click', () => {
+            closeModal(confirmationModal);
+            confirmActionCallback = null;
+        });
+
+        confirmActionButton.addEventListener('click', () => {
+            if (confirmActionCallback) {
+                confirmActionCallback();
+            }
+        });
+
+        // --- Hamburger Menu ---
+        hamburgerButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent click from bubbling to document
+            hamburgerMenuItems.classList.toggle('show');
+        });
+
+        // Close hamburger menu if clicked outside
+        document.addEventListener('click', (e) => {
+            if (!hamburgerButton.contains(e.target) && !hamburgerMenuItems.contains(e.target)) {
+                hamburgerMenuItems.classList.remove('show');
+            }
+        });
+        
+        myPageButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            hamburgerMenuItems.classList.remove('show');
+            openConfirmationModal(
+                'マイページ',
+                'マイページに戻りますか？ (実際の遷移はありません)',
+                () => {
+                    showToast('マイページへ遷移します (ダミー)。');
+                    closeModal(confirmationModal);
+                    // window.location.href = '/mypage'; // Actual redirect
+                }
+            );
+        });
+
+        logoutButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            hamburgerMenuItems.classList.remove('show');
+             openConfirmationModal(
+                'ログアウト',
+                'ログアウトしますか？ (実際のログアウト処理はありません)',
+                () => {
+                    showToast('ログアウトしました (ダミー)。');
+                    closeModal(confirmationModal);
+                    // window.location.href = '/logout'; // Actual redirect
+                }
+            );
+        });
+
+
+        // --- Initial Render ---
+        renderTable();
+    </script>
+</body>
+</html>
