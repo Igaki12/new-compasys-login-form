@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>採点中モーダル</title>
+    <style>
+        /* 基本的なページスタイル */
+        body {
+            font-family: 'Segoe UI', Meiryo, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* ボタンを上部に配置 */
+            min-height: 100vh;
+        }
+
+        /* モーダルをトリガーするボタンのスタイル */
+        .trigger-button {
+            padding: 12px 25px;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .trigger-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* モーダルオーバーレイのスタイル */
+        .modal-overlay {
+            position: fixed; /* 画面全体を覆う */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* 透明度0.8の黒背景 */
+            display: none; /* 初期状態では非表示 */
+            justify-content: center; /* 水平中央揃え */
+            align-items: center; /* 垂直中央揃え */
+            z-index: 1000; /* 他の要素より手前に表示 */
+        }
+
+        /* モーダルコンテンツのスタイル */
+        .modal-content {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 90%;
+            max-width: 480px; /* モーダルの最大幅を少し広げました */
+            animation: fadeInModal 0.5s ease-out; /* フェードインアニメーション */
+        }
+
+        @keyframes fadeInModal {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* ローディングスピナーのスタイル */
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 6px solid #e0e0e0; /* スピナーのトラック部分の色 */
+            border-top: 6px solid #007bff; /* スピナーの回転部分の色 */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px auto; /* 中央配置と下マージン */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* モーダル内のテキストスタイル */
+        .modal-title {
+            font-size: 1.6em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .modal-text {
+            font-size: 0.95em;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        .modal-text:last-of-type {
+             margin-bottom: 20px;
+        }
+
+        .waiting-message-container {
+            display: flex;
+            justify-content: center;
+            align-items: baseline; /* テキストとドットのベースラインを揃える */
+            margin-bottom: 25px;
+        }
+
+        .modal-text-emphasis {
+            font-size: 1.1em;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* 点滅するドットのアニメーション */
+        .waiting-message-container .dot {
+            font-size: 1.1em; /* テキストに合わせる */
+            color: #333; /* テキストに合わせる */
+            animation: blink 1.5s infinite steps(1, end);
+            margin-left: 1px;
+        }
+
+        .waiting-message-container .dot:nth-child(1) { animation-delay: 0s; }
+        .waiting-message-container .dot:nth-child(2) { animation-delay: 0.3s; }
+        .waiting-message-container .dot:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        /* AIからのヒント/豆知識表示エリア */
+        .tip-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa; /* 少し薄い背景色 */
+            border-radius: 8px;
+            min-height: 60px; /* テキストが複数行になることを想定して高さを調整 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #e9ecef; /* 枠線を追加 */
+        }
+
+        .ai-tip-text {
+            font-size: 0.9em;
+            color: #4a5568; /* 落ち着いた色 */
+            transition: opacity 0.5s ease-in-out; /* フェードイン・アウト効果 */
+            line-height: 1.5; /* 行間を調整 */
+            text-align: left; /* 長文に備えて左揃え */
+            width: 100%; /* コンテナ幅いっぱいに */
+        }
+    </style>
+</head>
+<body>
+
+    <button id="startScoringButton" class="trigger-button">採点を開始する</button>
+
+    <div id="scoringModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="loading-spinner"></div>
+            <h3 class="modal-title">現在採点中です</h3>
+            <p class="modal-text">採点にはAIを使用しているため、1分前後の時間を必要とします。</p>
+            <p class="modal-text">AIに解説文章を生成させるため、不適切な内容や誤った内容が含まれることがあります。ご了承ください。</p>
+            
+            <div class="waiting-message-container">
+                <p class="modal-text-emphasis">そのままお待ち下さい...</p>
+                <!-- <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span> -->
+            </div>
+
+            <div class="tip-container">
+                <p id="aiTip" class="ai-tip-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // モーダル要素とトリガーボタンの取得
+        const modal = document.getElementById('scoringModal');
+        const openModalButton = document.getElementById('startScoringButton');
+        const aiTipElement = document.getElementById('aiTip');
+
+        // 表示するヒント/豆知識のリスト (更新版)
+        const tips = [
+            "採点の仕組み：あなたのチャット内容と、お手本となる例文をAIが照らし合わせ、最も近いもののスコアを参考に評価しています。",
+            "最終評価は、すべてのチャットの平均点で決まります。チャットの回数や文章の長さよりも、一つ一つの内容の質を高めていきましょう！",
+            "状況に応じた対応には、いくつかの大切な要素があります。あなたのチャットにそれらの要素がさらに加わると、ぐっと良くなりますよ！不足している場合は減点となることがあります。",
+            "AIが、あなたのチャットに不足している要素や、さらに高得点を取るためのアドバイスを、一生懸命に文章生成しています。ご期待ください！",
+            "素晴らしいです！その調子で、コミュニケーションの達人を目指しましょう！AIも全力で応援しています！",
+            "AIがあなたの言葉遣いや表現を細かく分析中...。あなたの隠れた強みや改善点が見つかるかもしれません。",
+            "大丈夫、あなたはもっとできます！AIからのフィードバックを参考に、一緒にスキルアップしていきましょう！",
+            "結果が楽しみですね！AIがあなたの努力と工夫をしっかりと評価します。自信を持って！",
+            "一口メモ：AIは、あなたがどんな意図で、どんな気持ちを伝えようとしているのかを理解しようと頑張っています。",
+            "高得点のカギは、相手の心に寄り添った言葉を選ぶこと。AIも、その温かい気持ちをしっかり見ていますよ。",
+            "もし点数が伸び悩んだとしても、落ち込まないでくださいね。AIからのアドバイスが、次への大きなステップになるはずです！ファイト！",
+            "あなたの言葉には、人を動かす力があります。AIがその可能性を引き出すお手伝いをします。",
+            "AI採点では、お手本と比べてどんな点が素晴らしく、どんな点を工夫すればもっと良くなるか、具体的なアドバイスを生成します。",
+            "たくさんのチャットを重ねるよりも、一つ一つの発言に心を込めて、相手に伝わる工夫をすることが高得点への近道です。頑張って！",
+            "AIはあなたの学習パートナーです。一緒にたくさんのことを学んでいきましょう！"
+        ];
+        let currentTipIndex = 0;
+        let tipIntervalId = null; // インターバルIDを格納する変数
+
+        // 次のヒントを表示する関数
+        function displayNextTip() {
+            aiTipElement.style.opacity = 0; // フェードアウト
+            setTimeout(() => {
+                currentTipIndex = (currentTipIndex + 1) % tips.length;
+                aiTipElement.textContent = tips[currentTipIndex];
+                aiTipElement.style.opacity = 1; // フェードイン
+            }, 500); // 0.5秒後にテキストを更新してフェードイン
+        }
+
+        // モーダルを表示する関数
+        function showModal() {
+            modal.style.display = 'flex';
+            // 最初のヒントを表示
+            aiTipElement.textContent = tips[currentTipIndex];
+            aiTipElement.style.opacity = 1;
+            // ヒントの自動切り替えを開始 (7秒ごと。メッセージが長くなったため少し長めに設定)
+            if (tipIntervalId) clearInterval(tipIntervalId); // 既存のインターバルをクリア
+            tipIntervalId = setInterval(displayNextTip, 7000);
+        }
+
+        // モーダルを非表示にする関数 (今回は採点完了後にページ遷移等を想定)
+        function hideModal() {
+            modal.style.display = 'none';
+            if (tipIntervalId) clearInterval(tipIntervalId); // ヒントのインターバルを停止
+        }
+
+        // ボタンクリックでモーダルを表示
+        if (openModalButton) {
+            openModalButton.addEventListener('click', showModal);
+        }
+        
+        // 初期状態では最初のヒントを設定しておく (ただし非表示)
+        if(aiTipElement) {
+             aiTipElement.textContent = tips[0];
+             aiTipElement.style.opacity = 0; // 初期状態では透明
+        }
+
+    </script>
+
+</body>
+</html>
